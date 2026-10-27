@@ -1,173 +1,257 @@
+
 <?php
-	session_start();
-	include('logcheck.php');
-	if(isset($_POST['register']))
-	{
-		include('includes/conn.php');
-		
-		$course=$_POST['course'];
-		$stitle=$_POST['stitle'];
-		$scode=$_POST['scode'];
-		$sdescription=$_POST['cdescription'];
-		$numunits=$_POST['numunits'];
-		
-		$sroom=$_POST['sroom'];
-		$stime=$_POST['stime'];
-		$sday=$_POST['sday'];
-		$sinstructor=$_POST['sinstructor'];
-		
-		if(isset($_POST['islab']))
-		{
-			$islab=1;
-		}
-		else
-		{
-			$islab=0;
-		}
-	
-		if(isset($_POST['istutorial']))
-		{
-			$istutorial=1;
-		}
-		else
-		{
-			$istutorial=0;
-		}
-		
-		$insertquery=mysql_query("INSERT INTO subjecttbl VALUES ('','$scode','$stitle','$numunits','$sroom','$stime','$sday','$sinstructor',$islab,$istutorial,'$sdescription','$course')");
-		
-		echo"<script>window.alert('Successfully Created new Subject')</script>";
-		echo"<script>window.location='addnewsubj.php'</script>";
-	}
-	
-	
+session_start();
+
+require_once __DIR__ . '/logcheck.php';
+require_once __DIR__ . '/includes/conn.php';
+
+$message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
+
+    // Get and validate form data
+    $course = trim($_POST['course'] ?? '');
+    $stitle = trim($_POST['stitle'] ?? '');
+    $scode = trim($_POST['scode'] ?? '');
+    $sdescription = trim($_POST['cdescription'] ?? '');
+    $numunits = filter_input(INPUT_POST, 'numunits', FILTER_VALIDATE_INT);
+
+    $sroom = trim($_POST['sroom'] ?? '');
+    $stime = trim($_POST['stime'] ?? '');
+    $sday = trim($_POST['sday'] ?? '');
+    $sinstructor = trim($_POST['sinstructor'] ?? '');
+
+    $islab = isset($_POST['islab']) ? 1 : 0;
+    $istutorial = isset($_POST['istutorial']) ? 1 : 0;
+
+    if (
+        $course === '' ||
+        $stitle === '' ||
+        $scode === '' ||
+        $sroom === '' ||
+        $stime === '' ||
+        $sday === '' ||
+        $sinstructor === '' ||
+        $numunits === false ||
+        $numunits < 1 ||
+        $numunits > 6
+    ) {
+        $message = 'Please complete all required fields correctly.';
+    } else {
+        try {
+            $stmt = $mysqli->prepare(
+                "INSERT INTO subjecttbl
+                (subjectcode, subjecttitle, numofunits, room, `time`,
+                 `day`, instructor, islab, istutorial, description, course_con)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+
+            $stmt->bind_param(
+                "ssissssiiss",
+                $scode,
+                $stitle,
+                $numunits,
+                $sroom,
+                $stime,
+                $sday,
+                $sinstructor,
+                $islab,
+                $istutorial,
+                $sdescription,
+                $course
+            );
+
+            $stmt->execute();
+
+            header('Location: addnewsubj.php?success=1');
+            exit;
+
+        } catch (mysqli_sql_exception $e) {
+            error_log($e->getMessage());
+            $message = 'Unable to add the subject. Please try again.';
+        }
+    }
+}
+
+if (isset($_GET['success'])) {
+    $message = 'Successfully created a new subject.';
+}
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>John Paul College</title>
-
-
-<link href = "style.css" rel = "stylesheet" type = "text/css"/>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>John Paul College - Add New Subject</title>
+    <link href="style.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
 
-<div class='header'>
-</div>
-	
-<nav class='container'>
-	<?php
-include('includes/menu1.php');
-?>
+<div class="header"></div>
+
+<nav class="container">
+    <?php include __DIR__ . '/includes/menu1.php'; ?>
 </nav>
 
-
-
-
-
 <div id="main">
-	<div class="shell">
-	<center>
-	<form class='cmxform' method='POST'>
-	<fieldset>
-			<legend>Course Details</legend>
-			  <ol>
-			  <li>
-				  <label for="name">Select Course:<em>*</em></label>
-				  <select name='course'>
-					<option value='bsit'>BSIT</option>
-				  </select>
-				
-  </ol>
-			
-	</fieldset>
-	
-	<fieldset>	
-			  <legend>Subject Details</legend>
-			  <ol>
-			  <li>
-					<table>
-						<tr>
-							<td>Subject Code:</td><td align='left'><input type='text' required='required' maxlength='50' id="name" name='scode' /></td>
-						</tr>
-						<tr>
-							<td>Subject Title:</td><td align='left'><input type='text' required='required' id="name" name='stitle' /></td>
-						</tr>
-						<tr>
-							<td>Number of Units:</td><td align='left'><select name='numunits'>
-														<option value='1'>1</option>
-														<option value='2'>2</option>
-														<option value='3'>3</option>
-														<option value='4'>4</option>
-														<option value='5'>5</option>
-														<option value='6'>6</option></select></td>
-						</tr>
-						<tr>
-							<td><label>Subject Description:</label></td><td align='left'><textarea name='cdescription'></textarea></td>
-						</tr>
-						<tr>
-							<td><label>Room:</label></td><td align='left'><input type='text' required='required' id="name" name='sroom' /></td>
-						</tr>
-						<tr>
-							<td><label>Day:</label></td><td align='left'><input type='text' required='required' id="name" name='sday' /></td>
-						</tr>
-						<tr>
-							<td><label>Time:</label></td><td align='left'><input type='text' required='required' id="name" name='stime' /></td>
-						</tr>
-						<tr>
-							<td><label>Instructor:</label></td><td align='left'><input type='text' required='required' id="name" name='sinstructor' /></td>
-						</tr>
-						<tr>
-							<td><label>With Lab:</label></td><td align='left'><input type='checkbox' name='islab'></td>
-						</tr>
-						<tr>
-							<td><label>With Tutorial:</label></td><td align='left'><input type='checkbox' name='istutorial'></td>
-						</tr>
-					</table>
-					
-				</li>
-						
-				
-			 
-			  
-			  
-  </ol>
-</fieldset>
-<div align='center'><input type='submit' name='register' value='Add new subject'>&nbsp;&nbsp;
-<input type='reset' name='clear' value='Clear'></div>
-</form>
-</center>
-	</div>
-	<div><br></div>
-</div>
-<!-- /Main -->
+    <div class="shell">
+        <center>
 
-<!-- Footer -->
+            <?php if ($message !== ''): ?>
+                <p>
+                    <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
+                </p>
+            <?php endif; ?>
+
+            <form class="cmxform" method="POST" action="">
+
+                <fieldset>
+                    <legend>Course Details</legend>
+                    <ol>
+                        <li>
+                            <label for="course">Select Course:</label>
+                            <select name="course" id="course" required>
+                                <option value="bsit">BSIT</option>
+                            </select>
+                        </li>
+                    </ol>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Subject Details</legend>
+                    <ol>
+                        <li>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <label for="scode">Subject Code:</label>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="scode"
+                                            name="scode" maxlength="100" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="stitle">Subject Title:</label>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="stitle"
+                                            name="stitle" maxlength="100" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="numunits">Number of Units:</label>
+                                    </td>
+                                    <td>
+                                        <select name="numunits" id="numunits" required>
+                                            <?php for ($i = 1; $i <= 6; $i++): ?>
+                                                <option value="<?= $i ?>">
+                                                    <?= $i ?>
+                                                </option>
+                                            <?php endfor; ?>
+                                        </select>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="cdescription">Subject Description:</label>
+                                    </td>
+                                    <td>
+                                        <textarea name="cdescription"
+                                            id="cdescription" maxlength="100"></textarea>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="sroom">Room:</label>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="sroom"
+                                            name="sroom" maxlength="100" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="sday">Day:</label>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="sday"
+                                            name="sday" maxlength="100" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="stime">Time:</label>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="stime"
+                                            name="stime" maxlength="100" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="sinstructor">Instructor:</label>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="sinstructor"
+                                            name="sinstructor" maxlength="100" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="islab">With Lab:</label>
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" name="islab" id="islab">
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <label for="istutorial">With Tutorial:</label>
+                                    </td>
+                                    <td>
+                                        <input type="checkbox"
+                                            name="istutorial" id="istutorial">
+                                    </td>
+                                </tr>
+                            </table>
+                        </li>
+                    </ol>
+                </fieldset>
+
+                <div align="center">
+                    <input type="submit" name="register" value="Add New Subject">
+                    <input type="reset" value="Clear">
+                </div>
+
+            </form>
+        </center>
+    </div>
+</div>
+
 <div id="footer">
-	<div class="shell">
-		<!-- Mini Nav --> 
-		<div class="footer-navigation"> 
-			<?php
-include('includes/menu2.php');
-?>
-		</div> 
-		<!-- /Mini Nav --> 
-		
-		<!-- Copyrights --> 
-		<p class="right"> 
-			Copyright 2014 | Online Enrollment
-		</p> 
-		<!-- /Copyrights --> 
-		
-		<div class="cl">&nbsp;</div> 
-	</div>
+    <div class="shell">
+        <div class="footer-navigation">
+            <?php include __DIR__ . '/includes/menu2.php'; ?>
+        </div>
+
+        <p class="right">Copyright 2014 | Online Enrollment</p>
+        <div class="cl">&nbsp;</div>
+    </div>
 </div>
-
-
-
 
 </body>
 </html>

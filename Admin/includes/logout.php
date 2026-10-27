@@ -1,7 +1,30 @@
+/* ============================================================
+   6. ADMIN: Admin/includes/logout.php
+   ============================================================ */
+
 <?php
-error_reporting(E_ALL);
-session_start();
-unset($_SESSION['id']);
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+$_SESSION = [];
+
+if (ini_get('session.use_cookies')) {
+    $params = session_get_cookie_params();
+
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $params['path'],
+        $params['domain'],
+        $params['secure'],
+        $params['httponly']
+    );
+}
+
 session_destroy();
-echo "<script language='javascript'>window.location='../../index.php';</script>";
+
+header('Location: ../../index.php');
+exit;
 ?>

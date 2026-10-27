@@ -1,16 +1,24 @@
+/* ============================================================
+   10. ADMIN: Admin/deletecurrsubj.php
+   Replace the entire file.
+   ============================================================ */
+
 <?php
-if(isset($_GET['accid']))
-{
-	$num=$_GET['accid'];
-	require('includes/conn.php');
-	
-	$query2=mysql_query("DELETE FROM subjecttbl WHERE ID = '$num'");
-	echo"<script>window.alert('Successfully Removed the selected subject')</script>";
-	echo"<script>window.location='subjectreg.php'</script>";
-}
-else
-{
-	echo"<script>window.location='subjectreg.php'</script>";
+session_start();
+require_once __DIR__ . '/logcheck.php';
+require_once __DIR__ . '/includes/conn.php';
+
+$subjectId = filter_input(INPUT_GET, 'accid', FILTER_VALIDATE_INT);
+
+if (!$subjectId || $subjectId < 1) {
+    header('Location: subjectreg.php');
+    exit;
 }
 
+$stmt = $mysqli->prepare("DELETE FROM subjecttbl WHERE ID = ?");
+$stmt->bind_param("i", $subjectId);
+$stmt->execute();
+
+header('Location: subjectreg.php');
+exit;
 ?>
